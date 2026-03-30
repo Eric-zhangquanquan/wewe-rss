@@ -7,11 +7,13 @@ import configuration, { ConfigurationType } from './configuration';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FeedsModule } from './feeds/feeds.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
     TrpcModule,
     FeedsModule,
+    NotificationModule,
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,

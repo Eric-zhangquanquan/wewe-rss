@@ -12,6 +12,7 @@ import { load } from 'cheerio';
 import { minify } from 'html-minifier';
 import { LRUCache } from 'lru-cache';
 import pMap from '@cjs-exporter/p-map';
+import { NotificationService } from '@server/notification/notification.service';
 
 console.log('CRON_EXPRESSION: ', process.env.CRON_EXPRESSION);
 
@@ -28,6 +29,7 @@ export class FeedsService {
     private readonly prismaService: PrismaService,
     private readonly trpcService: TrpcService,
     private readonly configService: ConfigService,
+    private readonly notificationService: NotificationService,
   ) {
     this.request = got.extend({
       retry: {
@@ -93,6 +95,27 @@ export class FeedsService {
         );
       } catch (err) {
         this.logger.error('handleUpdateFeedsCron error', err);
+
+        const errMsg = (err as any)?.response?.data?.message || (err as Error)?.message || '';
+        const accountId = (err as any)?.config?.headers?.xid || '';
+
+        // 获取账号名称
+        let accountName = accountId;
+        try {
+          const account = await this.prismaService.account.findUnique({ where: { id: accountId } });
+          if (account) {
+            accountName = account.name;
+          }
+        } catch {
+          // ignore
+        }
+
+        // 发送钉钉通知
+        if (errMsg.includes('WeReadError401')) {
+          await this.notificationService.sendAccountExpiredNotification(accountId, accountName);
+        } else if (errMsg.includes('WeReadError429')) {
+          await this.notificationService.sendAccountRateLimitedNotification(accountId, accountName);
+        }
       } finally {
         // wait 30s for next feed
         await new Promise((resolve) => setTimeout(resolve, 30 * 1e3));
