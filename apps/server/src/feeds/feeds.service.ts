@@ -111,10 +111,22 @@ export class FeedsService {
         }
 
         // 发送钉钉通知
-        if (errMsg.includes('WeReadError401')) {
-          await this.notificationService.sendAccountExpiredNotification(accountId, accountName);
+        // WeReadError401: Account token expired or invalid (需要重新登录)
+        // WeReadError429: Account rate limited (请求过于频繁)
+        if (!accountId) {
+          this.logger.warn('Cannot send notification: accountId is empty');
+        } else if (errMsg.includes('WeReadError401')) {
+          try {
+            await this.notificationService.sendAccountExpiredNotification(accountId, accountName);
+          } catch (notifyErr) {
+            this.logger.error('Failed to send account expired notification', notifyErr);
+          }
         } else if (errMsg.includes('WeReadError429')) {
-          await this.notificationService.sendAccountRateLimitedNotification(accountId, accountName);
+          try {
+            await this.notificationService.sendAccountRateLimitedNotification(accountId, accountName);
+          } catch (notifyErr) {
+            this.logger.error('Failed to send account rate limited notification', notifyErr);
+          }
         }
       } finally {
         // wait 30s for next feed
