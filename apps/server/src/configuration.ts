@@ -18,6 +18,10 @@ const configuration = () => {
   const updateDelayTime = parseInt(`${process.env.UPDATE_DELAY_TIME} || 60`);
 
   const enableCleanHtml = process.env.ENABLE_CLEAN_HTML === 'true';
+
+  const dingtalkWebhookUrl = process.env.DINGTALK_WEBHOOK_URL;
+  const dingtalkSecret = process.env.DINGTALK_SECRET;
+
   return {
     server: { isProd, port, host },
     throttler: { maxRequestPerMinute },
@@ -31,6 +35,10 @@ const configuration = () => {
     },
     database: {
       type: databaseType,
+    },
+    dingtalk: {
+      webhookUrl: dingtalkWebhookUrl,
+      secret: dingtalkSecret,
     },
   };
 };
